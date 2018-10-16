@@ -1,0 +1,129 @@
+1、File
+    1、File类并不代表一个文件本身，它是文件和目录路径名的抽象表现形式
+    指的是一个联系(java的抽象特性)
+    2、java程序与文件之间是通过File来联系的，File也不能读取文件,它只是文件的抽象表示
+    读取文件内容还是需要通过io流
+    3、两个常量
+        3.1、路径分隔符 File.pathSeparator ;
+        3.2、名称分隔符 File.separator window（\） linux（/）
+        \需要转义，所以需要\\,推荐使用/因为都通用
+    4、构建File对象
+        4.1、相对路径构建
+            File(String parent,String child);
+            File(File parent, String child);
+        4.2、绝对路径构建
+            File(String path);
+        4.3、getPath和getAbsolutePath
+            当使用.指定相对路径
+            getPath()方法返回相对路径
+            getAbsolutePath()方法返回绝对路径
+            当使用绝对路径
+            getPath()方法返回绝对路径
+            getAbsoluteFile()方法返回绝对路径
+    5、常用方法
+        demo04
+    6、目录常用方法
+        demo05
+
+2、IO流
+    一、概念
+        流：流动、流向从一端移动到另一端 源头与目的地
+        程序 与 文件|数组|网络连接|数据库，
+        记住是以程序为中心，弄到程序叫入和读，从程序弄出去的叫出和写
+    二、IO分类
+        按流向：输入流和输出流
+        按数组：
+            字节流：二进制 可以一切文件，包括纯文本，图片，音频，doc等等
+            字符流：文本文件，只能处理纯文本
+        按功能：
+            节点流：包裹源头，在源头
+            处理流：增强功能，提高性能，在末端
+
+    三、字符流和字节流(重点) 与文件
+        字节流：
+            输入流：InputStream(接口)
+                常用方法read(byte[] b)，read(byte[] b, int off, int len)+close()
+                一般不用read()，不要一个字节一个字节读，通常都是字节数组
+                FileInputStream
+            输出流：OutputStream(接口)
+                常用方法write(byte[] b)，write(byte[] b, int off, int len)+flush() +close()
+                FileOutputStream
+        字符流：
+            输入流：Reader(接口)
+                常用方法read(char[] cbuf)，read(char[] cbuf, int off, int len)+close()
+                FileReader
+            输出流：Writer(接口)
+                常用方法write(char[] cbuf)，write(char[] cbuf, int off, int len) +flush() +close()
+                write(String str),write(String str, int off, int len)
+                FileWriter
+    四、操作
+        举例：搬家
+        1）关联房子    ==> 读取文件
+                      ==>建立与文件的联系
+        2）选择搬家      ==>选择对应的流
+
+        3）搬家        ==>读取|写出
+            a)卡车大小      ==>数组大小
+            b)运输          ==>读取，写出
+        4）打发over        ==>释放资源
+
+        操作总结：
+            1）建立联系
+            2）选择流
+            3）操作数组大小+read，writer
+            4）释放资源
+
+    五、读取文件
+        1、建立联系 File对象，源头
+        2、选择流 InputStream FileInputStream
+        3、操作 byte[1024] + read + len
+            //先定义一个缓存数组，每次read之后会把读到的暂时保存在这个缓冲数组中
+            byte[] flush = new byte[1024];
+            //再定义一个实际读取的字节，因为不可能刚好每次都是读取1024个字节
+            int len = 0;
+            //循环读取
+            while((len=is.read(flush))!=-1){
+                //第一次读1024字节，当全部读完之后，再读就会是-1
+                //读到的是字节，需要转换字符串输出
+                //因为这里就循环一次所以可以用String
+                //循环多次就不能用String会覆盖，因为String是不可变的
+                //可以使用Stringbuffer
+                String info = new String(car,0,len);
+                System.out.println(info);
+            }
+        4、释放资源 close
+
+    六、写出文件
+        1、建立联系 File对象 目的地
+        2、选择流 OutputStream FileOutputStream
+        3、操作 write + flush
+            //true表示追加，默认false，true的时候会在文件的末尾追加要写入的
+            //false的话会覆盖文件之前的
+            os = new FileOutputStream(file,true);
+            String s = "i feel good";
+            //字符串转字节
+            byte[] bytes = s.getBytes();
+            os.write(bytes);
+            os.flush();
+        4、释放资源
+
+    七、文件的拷贝
+        1、建立联系 两个File对象 源头和目的地
+        2、选择流
+            文件输入流：InputStream FileInputStream
+            文件输出流：OutputStream FileOutputStream
+        3、操作：拷贝
+            byte[] bs = new byte[1024];
+            int len = 0;
+            while(!=-1){
+                write + flush
+            }
+        4、释放资源，关闭两个流
+
+
+
+
+
+
+
+

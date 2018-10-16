@@ -1,0 +1,104 @@
+1、为什么要有异常类
+  if(“d:/a.txt”这个文件存在){
+    if(e盘的空间大于a.txt文件长度){
+        if(文件复制一半IO流断掉){
+            停止copy，输出：IO流出问题！
+        }else{
+        copyFile("d:/a.txt","e:/a.txt");
+    }
+  }else{
+        输出：e盘空间不够存放a.txt！
+  }
+  }else{
+        输出：a.txt不存在！
+         }
+  处理异常的方法：
+      1、使用ifelse处理异常的缺点
+            1、代码臃肿，业务代码和错误代码放在一起
+            2、如果你调用一个接口，这个接口你只有说明书，也不是你开发的
+            你还得去了解这个接口的所有异常情况，对程序员要求太高
+      2、使用java异常处理机制
+            好处：将异常处理代码与逻辑代码分离，使程序更优雅，更好的容错性，健壮性
+            流程：
+                程序运行-->发生异常-->产生异常对象-->捕获异常-->处理异常-->异常处理完毕程序继续运行
+                产生异常对象之后把它交给jre
+                jre得到该异常之后，寻找相应的代码来处理该异常，jre在方法的调用栈中查找，直到找到异常的处理代码为止
+
+      3、主要的类，都是类不是接口
+            Object-->Throwable
+            Throwable-->Error   （程序员不用管，出现只能重启）
+            Throwable-->Exception
+            Exception之下又分为两个
+                unchecked exception又叫runtime exception
+                    如：被0除，数组下标超范围等，其产生比较频繁，处理麻烦
+                    如果显式的声明或捕获将会对程序的可读性和运行效率影响很大
+                    因此由系统自动检测并交给缺省的异常处理程序(程序员不必对其处理)
+                    编译器无法做检查
+
+                几个常见的unchecked exception
+                    1、NullPointException怎么来的：对象为null，然后调用对象的方法或者属性
+                        c = null 对象在堆，变量在栈
+                        避免空指针加if判断是否null
+                    2、ClassCastException：
+                        解决使用instanceof
+
+                    3、ArrayIndexOutOfBoundsException
+                        解决使用if判断<a.length-1
+                    4、NumberFormatException,就是把含有数字和字母的字符串传递给Number下的子类
+                        String a = "1234abc";
+                        Integer i = new Integer(a);
+                    5、ArithmeticException
+                        除数为0
+                checked
+                    这一类异常我们必须进行捕获处理，如Thread.sleep，
+                    编译器会提示需要trycatch捕获，或者抛出
+
+
+2、异常处理办法之二：try catch
+    2.1、捕获异常 try catch finally
+      e.toString() 显示异常的类名和显示异常的原因
+      e.getMessage() 只显示异常产生的原因不显示类名
+      e.printStackTrace 用来跟踪异常事件发生时堆栈的内容
+    2.2、如果异常类之间有继承关系，越顶层的类放越下面，不然就把多余的catch省略掉
+    2.3、在finally里关闭资源，如io，数据库链接
+    2.4、finally没return
+            如果产生异常，就返回try里return
+            如果产生异常，返回catch里的return
+         finally有return
+            不管是否产生异常，最后都是返回finally里的return
+    2.5、所有输出语句按顺序执行，return是最后返回的
+
+3、异常处理办法之二：声明异常：throws子句
+    1、加throws表示自己不处理，谁调我谁处理(try catch)
+    2、throws可以抛出多个
+    3、最上一层是throws给jre了，这种不推荐，最好在程序中就处理异常
+    4、方法重写
+        4.1、父类抛出unchecked异常，子类可以抛出所有的unchecked异常,包括uncheck异常最顶的类RuntimeException
+        但是不能抛出checked异常，Exception也不可以
+        4.2、父类抛出checked异常，子类可以抛出所有的unchecked异常
+        和父类异常的子类，不能超出父类异常的范围。
+
+
+4、异常处理办法之三：手动抛出异常，throw子句
+        自己new一个异常对象抛出去
+
+
+
+5、自定义异常，异常机制没有符合我们的异常类就自定义一个
+    三步：
+        1、继承异常类
+        2、默认构造方法
+        3、有参构造方法
+
+
+总结：
+1、unchecked是不受检查，因为太频繁了直接由系统做处理，error是unchecked
+2、checked是受检查，编译器会提示需要trycatch
+3、五个关键字try catch finally throws throw
+4、先逮小的后逮大的
+5、异常重写关系
+6、自定义异常
+
+
+
+

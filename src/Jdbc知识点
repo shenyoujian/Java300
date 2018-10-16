@@ -1,0 +1,180 @@
+1、jdbc(java database connection)是一个Oracle公司提供的一套执行sql语句的javaApi(jdbc规范)
+2、关系型数据库厂商需要实现这些Jdbc接口，例如mysql驱动，Oracle驱动
+等等，这些都是Jdbc驱动，用来连接各种不同的数据库。(驱动jar包)
+3、而我们通过jdbcApi(规范)来应用这些jar包里的类
+4、Jdbc访问数据库的步骤：
+    4.1、加载驱动
+            Class.forName("com.mysql.jdbc.Driver")通过反射来加载Driver这个类
+            Class.forName("oracle.JDBC.driver.OracleDriver");
+    4.2、创建连接
+         Connection conn = DriverManager.getConnection(url,user,password)
+         "jdbc:mysql://localhost:3306/testjdbc"
+         "jdbc:oracle:thin:@localhost:1521:orcl"
+
+         - connection对象里包含了一个socket对象，是一个远程连接(即使都在同一台机器上)，所以比较耗时，这是Connection对象管理的一个要点。
+         真正的开发，为了提高效率都会使用连接池来管理这些对象。
+
+    4.3、执行sql语句
+         Statement接口
+            Statement stmt = conn.createStatement();
+            方法：
+            boolean execute(String sql) 执行任意sql语句，然后返回boolean值表示是否返回ResultSet
+            ResultSet executeQuery(String sql) 执行查询sql并且获取ResultSet对象
+            int executeUpdate(String sql) 执行插入，删除，更新，返回是该操作影响的行数
+
+            为什么不用Statement(执行简单的sql语句)
+                1、sql语句需要拼接，麻烦  '" + "' 记住字符串要加'',整数和函数就不用
+                2、sql注入问题，参数给你加入恶意代码 例如 or 1=1
+
+
+         PreparedStatement接口(继承Statement),实际开发中使用这个
+            PreparedStatement ps= conn.preparedStatement(sql);
+            ps.setString(1,xxx)
+            ps.setInt(2,xxx)
+            ps.Object(3,xxx)
+            ps.execute();
+            1、预处理,防止sql注入
+            2、使用占位符?,避免拼接麻烦
+            3、jdbc的索引从1开始
+            4、可以是setObject
+
+         CallableStatement接口(继承PreparedStatement)
+            由prePareCall方法创建，用于调用存储过程
+
+    4.4、处理结果集
+        • 一般开发我们很少用execute(),查询用executeQuery(),增删改用executeUpdate()
+        • ResultSet里的数据一行一行排列，每行有多个字段，且有一个记录指针，指针所指的数据行
+          叫做当前数据行，我们只能来操作当前的数据行。我们如果想要取得某一条记录，就要使用
+          ResultSet的next()方法 ,如果我们想要得到ResultSet里的所有记录，就应该使用while循环。
+        • ResultSet对象自动维护指向当前数据行的游标。每调用一次next()方法，游标向下移动一行，如果有下一行返回true，否则false
+        • 初始状态下记录指针指向第一条记录的前面，通过next()方法指向第一条记录。循环完毕后
+          指向最后一条记录的后面。
+        • 其他常用方法
+        void close() 关闭ResultSet 对象
+        previous() 游标从当前位置移到上一行
+        int getInt(int colIndex) 以int形式获取结果集当前行指定列号值
+        int getInt(String colLabel) 以int形式获取结果集当前行指定列名值
+        float getFloat(int colIndex) 以float形式获取结果集当前行指定列号值
+        float getFloat(String colLabel) 以float形式获取结果集当前行指定列名值
+        String getString(int colIndex) 以String 形式获取结果集当前行指定列号值
+        String getString(String colLabel) 以String形式获取结果集当前行指定列名值
+
+
+    4.5、关闭资源
+        关闭资源顺序ResultSet-->PreparedStatement-->Connection
+        并且三个trycatch块要分开写，不能写一起
+        finally {
+             try{
+                if(xxx!=null){
+                    xxx.close();
+                }
+             }catch(){
+           }
+        }
+
+5、批处理
+    执行大量的sql语句
+    不要使用preparedStatement，因为预处理空间有限，这时候就可以使用statement来执行sql
+    需要先将事务的自动提交设置为false，执行之后再手动提交
+    conn.setAutoCommit(false);
+    stmt = conn.createStatement();
+    for(int i=0;i<20000;i++){
+        stmt.addBatch("insert into jdbc_user (username, pwd, regTime) values ('李建生" + i + "', 666666, now())");
+    }
+    stmt.executeBatch();
+    conn.commit();//最后再提交
+
+6、事务
+    概念：一组要么同时执行成功，要么同时执行失败的sql语句，是数据库操作的一个执行单元。
+    事务开始于：
+        • 连接数据库之后，并执行一条DML语句(insert,delete,update)
+        • 前一个事务结束后，又输入了一条DML语句
+    事务结束于：
+        • 执行commit或者rollback语句
+        • 执行一条DDL语句，例如create table，自动执行commit
+        • 执行一条DCL语句，例如Grant,自动执行commit
+        • 断开与数据库的连接
+        • 执行一条DML语句，该语句失败了，默认为该DML语句执行rollback语句
+
+    事务四大特点：ACID
+        atomicity(原子性)：表示一个事务内的所有操作是一个整体，要么全部成功，要么全部失败
+        consistency(一致性描述回滚)：表示一个事务内有一个操作失败，所有更改过的数据都必须回滚到更改前的状态
+        isolation(隔离性):事务查看数据是数据所处的状态,事务A修改某条数据，如果是读取未提交，B事务在A事务还没提交事务
+        就可以看到修改后的内容，如果是读取已提交，就需要在A事务提交之后，B事务才能看到更改。
+            读取未提交(read uncommitted)
+            读取已提交   (read committed)
+            可重复读    (repeatable read)
+            序列化       (serializable)(相当于锁表)
+            等级从低到高，效率从高到低
+        durability(持久性):事务提交后，保存到硬盘中
+
+
+7、时间类型
+    java.sql.Date对应数据库里的Date类型，表示日期
+    java.sql.Time对应数据库里的Time类型，表示年月日
+    java.sql.TimeStamp对应数据库里的TimeStamp类型，表示日期加年月日
+    他们都是java.util.Date的子类
+    开发主要使用Date和TimeStamp，都可以传入一个long型的参数，表示秒数
+
+    随机生成时间
+          //随机数,生成0到一百亿之间的任意数
+          int rand = new Random().nextInt(1000000000);
+          然后在插入时间那里System.currentTimeMillis()-rand就行了。
+          当然你也可以指定插入在某个时间段的时间，自己秒数去算
+
+8、
+    取出时间段的数据
+    String sql = "select * from jdbc_user where loginTime>? and loginTime<? order by loginTime";
+    stmt = conn.prepareStatement(sql);
+    long start = Convert("2018-10-8 00:00:00");
+    long end = Convert("2018-10-9 00:00:00");
+    stmt.setObject(1,new Date(start));
+    stmt.setObject(2,new Date(end));
+    rs = stmt.executeQuery();
+    //处理结果集
+    /**
+     * Author ljs
+     * Description 字符串日期转换为long型
+     * Date 2018/10/9 21:45
+     **/
+    public static long Convert(String date){
+        DateFormat format = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+        try {
+            return format.parse(date).getTime();
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+9、
+    java.sql.Clob用于存储大量的文本数据，
+    大字段的操作常常是以流的方式来处理的，而非一般字段，一次即可读取数据。
+    stmt.setClob(2,new FileReader(new File("e://a.txt")));
+    对应mysql里的
+    tinytext(255字符),text(65535字符),mediumtext,longtext,主要使用text
+    一般不往数据库里存文本数据，一般存于文件服务器
+
+10、
+    java.sql.Blob用于存储大量的二进制数据
+    大字段的操作常常是以流的方式来处理的，而非一般字段，一次即可读取数据。
+    对应mysql里的
+    tinyBlob(255字节),blob(65535字节),mediumblob,longblob,主要使用blob
+
+11、总结：
+    封装jdbc
+    1、创建一个工具类JDBCUtil，包含获取连接和关闭流的static方法
+    2、使用读取外部资源文件来避免魔鬼数字，
+
+    static Properties properties;
+    //确保在加载JDBCUtil类的时候只加载一次
+    static {
+        properties = new Properties();
+        try {
+            //读取bin下的db文件
+            properties.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("db.properties"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
